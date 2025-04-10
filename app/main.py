@@ -214,78 +214,10 @@ class ScriptOptions:
     char_threshold: float = field(default=0.35)
 
 
-def model_loader(opts: ScriptOptions):
-    repo_id = MODEL_REPO_MAP.get("eva02_large")
-    image_path = Path(opts.image_file).resolve()
-    if not image_path.is_file():
-        raise FileNotFoundError(f"Image file not found: {image_path}")
-
-    print(f"Loading model 'eva02_large' from '{repo_id}'...")
-    model, target_size = load_model_hf(repo_id=repo_id)
-
-    print("Loading tag list...")
-    labels: LabelData = load_labels_hf(repo_id=repo_id)
-
-    print("Loading image and preprocessing...")
-    # get image
-    img_input: Image.Image = Image.open(image_path)
-    # ensure image is RGB
-    img_input = pil_ensure_rgb(img_input)
-    # pad to square with white background
-    img_input = pil_pad_square(img_input)
-    img_input = pil_resize(img_input, target_size)
-    # convert to numpy array and add batch dimension
-    inputs = np.array(img_input)
-    inputs = np.expand_dims(inputs, axis=0)
-    # NHWC image RGB to BGR
-    inputs = inputs[..., ::-1]
-
-    print("Running inference...")
-    outputs = model.predict(inputs)
-
-    print("Processing results...")
-    caption, taglist, ratings, character, general = get_tags(
-        probs=outputs,
-        labels=labels,
-        gen_threshold=opts.gen_threshold,
-        char_threshold=opts.char_threshold,
-    )
-
-    print("--------")
-    print(f"Caption: {caption}")
-    print("--------")
-    print(f"Tags: {taglist}")
-
-    print("--------")
-    print("Ratings:")
-    for k, v in ratings.items():
-        print(f"  {k}: {v:.3f}")
-
-    print("--------")
-    print(f"Character tags (threshold={opts.char_threshold}):")
-    for k, v in character.items():
-        print(f"  {k}: {v:.3f}")
-
-    print("--------")
-    print(f"General tags (threshold={opts.gen_threshold}):")
-    for k, v in general.items():
-        print(f"  {k}: {v:.3f}")
-
-    print("Done!")
-
-
-# if __name__ == "__main__":
-#     opts, _ = parse_known_args(ScriptOptions)
-#     if opts.model not in MODEL_REPO_MAP:
-#         print(f"Available models: {list(MODEL_REPO_MAP.keys())}")
-#         raise ValueError(f"Unknown model name '{opts.model}'")
-#     main(opts)
-
-
 app = FastAPI()
 
-repo_id = MODEL_REPO_MAP.get("eva02_large")
-print(f"Loading model 'eva02_large' from '{repo_id}'...")
+repo_id = MODEL_REPO_MAP.get("swinv2_v3")
+print(f"Loading model 'swinv2_v3' from '{repo_id}'...")
 model, target_size = load_model_hf(repo_id=repo_id)
 
 print("Loading tag list...")
@@ -321,25 +253,14 @@ async def read_item(image: UploadFile = File(...)):
             gen_threshold=ScriptOptions.gen_threshold,
             char_threshold=ScriptOptions.char_threshold,
         )
-        print("--------")
-        print(f"Caption: {caption}")
-        print("--------")
-        print(f"Tags: {taglist}")
-
-        print("--------")
-        print("Ratings:")
-        for k, v in ratings.items():
-            print(f"  {k}: {v:.3f}")
-
-        print("--------")
-        print(f"Character tags (threshold={ScriptOptions.char_threshold}):")
-        for k, v in character.items():
-            print(f"  {k}: {v:.3f}")
-
-        print("--------")
-        print(f"General tags (threshold={ScriptOptions.gen_threshold}):")
-        for k, v in general.items():
-            print(f"  {k}: {v:.3f}")
-        return "SUCCESS"
+        tags = [x for x in general]
+        tags.extend([x for x in character])
+        return JSONResponse(content={
+            "ratings": [{"name": k, "score": float(v)} for k, v in ratings.items()],
+            "character": [{"name": k, "score": float(v)} for k, v in character.items()],
+            "general": [{"name": k, "score": float(v)} for k, v in general.items()],
+            "tags": tags
+        }, status_code=200)
     except Exception as e:
+        print(e)
         return JSONResponse(content={"error": "Invalid image"}, status_code=400)
