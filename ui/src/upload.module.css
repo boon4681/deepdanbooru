@@ -1,0 +1,30 @@
+
+
+.pill-0 {
+    border: 1px solid;
+    color: var(--mantine-color-blue-7);
+    border-color: var(--mantine-color-blue-7);
+    background: transparent;
+}
+.pill-4 {
+    border: 1px solid;
+    color: var(--mantine-color-pink-7);
+    border-color: var(--mantine-color-pink-7);
+    background: transparent;
+}
+.pill-9 {
+    /* color:white;
+    background: var(--mantine-color-blue-4); */
+    color: var(--mantine-color-teal-7);
+    border: 1px solid;
+    border-color: var(--mantine-color-teal-7);
+    background: transparent;
+}
+.pill-explicit {
+    /* color:white;
+    background: var(--mantine-color-red-6); */
+    color: var(--mantine-color-red-7);
+    border: 1px solid;
+    border-color: var(--mantine-color-red-6);
+    background: transparent;
+}

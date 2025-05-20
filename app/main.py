@@ -15,7 +15,7 @@ from huggingface_hub import hf_hub_download
 from huggingface_hub.utils import HfHubHTTPError
 from PIL import Image
 from simple_parsing import field, parse_known_args
-
+from fastapi.staticfiles import StaticFiles
 import Models
 
 MODEL_REPO_MAP = {
@@ -224,9 +224,9 @@ print("Loading tag list...")
 labels: LabelData = load_labels_hf(repo_id=repo_id)
 
 
-@app.get("/")
-def read_root():
-    return "Deepdanbooru"
+# @app.get("/")
+# def read_root():
+#     return "Deepdanbooru"
 
 
 @app.post("/predict")
@@ -264,3 +264,5 @@ async def read_item(image: UploadFile = File(...)):
     except Exception as e:
         print(e)
         return JSONResponse(content={"error": "Invalid image"}, status_code=400)
+
+app.mount("/", StaticFiles(directory="web_static", html=True), name="web_static")
